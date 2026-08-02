@@ -1,2 +1,3 @@
-# qr-transfer
+# QR Transfer
+
 Transfer files using QR codes
