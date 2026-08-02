@@ -6,7 +6,7 @@ import Receiver from "./receiver/receiver";
 
 function App() {
   return (
-    <BrowserRouter basename="qr-transfer">
+    <BrowserRouter basename="/qr-transfer">
       <Routes>
         <Route index element={<Home />} />
         <Route path="sender" element={<Sender />} />
