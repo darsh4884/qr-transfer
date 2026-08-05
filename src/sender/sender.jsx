@@ -94,6 +94,7 @@ function Sender() {
     <div className="flex flex-col items-start w-full p-2">
       <h1 className="text-2xl">Sender</h1>
       <p>Please upload a file here (100kb max) and click on transfer</p>
+      <p>Then use the other phone as Receiver and scan the QR codes that show up</p>
       <input type="file" className="my-2" onChange={handleFileSelection} />
 
       <div className="flex gap-2">
