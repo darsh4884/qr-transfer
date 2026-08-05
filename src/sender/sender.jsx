@@ -5,85 +5,89 @@ import QRCode from "qrcode";
 
 function Sender() {
   const is_transferring_ref = useRef(false);
+  const qr_code_img_ref = useRef(null);
 
-  const [file, setFile] = useState(null);
-  const [current_packet, setCurrent] = useState(0);
-  const [total_packets, setTotal] = useState(0);
-  const [qr_code, setQrCode] = useState(null);
+  const [file_to_transfer, setFileToTransfer] = useState(null);
+  const [file_path, setFilePath] = useState("");
+  const [current_packet, setCurrentPacket] = useState(null);
+
+  const PACKET_SIZE = 500;
+  const DELAY_BETWEEN_QR_CODES = 150;
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  function handleFileSelection(event) {
-    const file = event.target.files[0];
+  function handleFileSelection(e) {
+    e.preventDefault();
+
+    const file = e.target.files[0];
+    const path = e.target.value;
 
     if (!file) {
-      alert("You need to choose a file");
+      alert("File Not Selected");
       return;
     }
 
-    if (file && file.size > 100000) {
-      alert("Your file is too big");
+    if (file.size > 100000) {
+      alert("File size is too big. Please select a file smaller than 100kb");
+      setFileToTransfer(null);
+      setFilePath("");
       return;
     }
 
-    setFile(file);
+    setFileToTransfer(file);
+    setFilePath(path);
   }
 
   async function startTransfer() {
-    if (!file) {
+    if (!file_to_transfer) {
       alert("No file selected");
       return;
     }
-
-    if (is_transferring_ref.current === true) {
+    if (is_transferring_ref.current) {
+      alert("A transfer is already in progress");
       return;
     }
 
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    const data = btoa(String.fromCharCode(...bytes));
+    const { name, type, size } = file_to_transfer;
 
-    const chunks = [];
-    for (let i = 0; i < data.length; i += 100) {
-      chunks.push(data.slice(i, i + 100));
-    }
+    const buffer = await file_to_transfer.arrayBuffer();
+    const binary_data = new Uint8Array(buffer);
+    const encoded_file_data = btoa(String.fromCharCode(...binary_data));
 
     const packets = [];
-    let index = 0;
-    for (const chunk of chunks) {
-      const packet = {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        index: index,
-        total: chunks.length,
-        data: chunk,
-      };
+    let count = 0;
+
+    for (let i = 0; i < encoded_file_data.length; i += PACKET_SIZE) {
+      const chunk = encoded_file_data.slice(i, i + PACKET_SIZE);
+      const packet = { id: count, name, size, type, data: chunk };
       packets.push(packet);
-      index++;
+      count++;
     }
 
+    packets.forEach((packet) => {
+      packet["total"] = count;
+    });
+
     is_transferring_ref.current = true;
-    setTotal(packets.length);
-    transfer(packets);
+    renderQrCodes(packets);
   }
 
-  async function transfer(packets) {
+  async function renderQrCodes(packets) {
     for (const packet of packets) {
-      const is_transferring = is_transferring_ref.current;
-      if (is_transferring === false) {
+      if (!is_transferring_ref.current) {
         return;
       }
 
-      console.log(`Showing ${packet.index}/${packet.total} packets`);
-      setCurrent(packet.index);
+      setCurrentPacket(packet);
 
-      const json = JSON.stringify(packet);
-      const encoded_data = await QRCode.toDataURL(json);
-      setQrCode(encoded_data);
-      await delay(100);
+      const json_payload = JSON.stringify(packet);
+      const qr_code = await QRCode.toDataURL(json_payload);
+      qr_code_img_ref.current.src = qr_code;
+
+      await delay(DELAY_BETWEEN_QR_CODES);
     }
-    transfer(packets);
+
+    renderQrCodes(packets);
   }
 
   function stopTransfer() {
@@ -91,30 +95,37 @@ function Sender() {
   }
 
   return (
-    <div className="flex flex-col items-start w-full p-2">
-      <h1 className="text-2xl">Sender</h1>
-      <p>Please upload a file here (100kb max) and click on transfer</p>
-      <p>Then use the other phone as Receiver and scan the QR codes that show up</p>
-      <input type="file" className="my-2" onChange={handleFileSelection} />
+    <div className="container-fluid">
+      <div className="row">
+        <div className="col p-5">
+          <h1 className="text-4xl font-semibold">You are now a sender</h1>
+          <p>Please select a file (smaller than 100kb) and click on transfer</p>
+          <p>The app will start showing QR codes continously which you can scan on the other device acting as a receiver</p>
 
-      <div className="flex gap-2">
-        <NavLink to="/" className="btn btn-primary rounded-sm">
-          Go Back
-        </NavLink>
-        <button className="btn btn-success rounded-sm" onClick={startTransfer}>
-          Start Transfer
-        </button>
-        <button className="btn btn-danger rounded-sm" onClick={stopTransfer}>
-          Stop Transfer
-        </button>
-      </div>
+          <div className="lg:max-w-[50%] mt-2">
+            <input value={file_path} className="form-control" type="file" onChange={handleFileSelection} />
+          </div>
 
-      <div className="w-[200px] h-[200px] mt-4 border border-gray-400 rounded-sm">
-        <img src={qr_code} />
+          <div className="flex flex-wrap gap-1 mt-2">
+            <NavLink to="/" className="px-5 py-2 rounded-md bg-blue-500 text-white cursor-pointer border-2 hover:border-blue-800">
+              Back
+            </NavLink>
+            <button className="px-5 py-2 rounded-md bg-green-500 text-white cursor-pointer border-2 hover:border-green-800" onClick={startTransfer}>
+              Start
+            </button>
+            <button className="px-5 py-2 rounded-md bg-red-500 text-white cursor-pointer border-2 hover:border-red-800" onClick={stopTransfer}>
+              Stop
+            </button>
+          </div>
 
-        <p>
-          {current_packet} / {total_packets}
-        </p>
+          <div className="mt-2 lg:w-[200px] lg:h-[200px] border border-gray-300 p-2">
+            <img ref={qr_code_img_ref} className="object-contain" alt="qr-code" src={"/no-qr-placeholder.png"} />
+          </div>
+          <pre className="lg:w-[50%] bg-gray-100 p-4 rounded overflow-auto text-sm mt-2">
+            <p className="font-semibold">Current Data Packet</p>
+            {JSON.stringify(current_packet, null, 2)}
+          </pre>
+        </div>
       </div>
     </div>
   );
