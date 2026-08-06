@@ -119,7 +119,7 @@ function Sender() {
           </div>
 
           <div className="mt-2 lg:w-[300px] lg:h-[300px] border border-gray-300 p-2">
-            <img ref={qr_code_img_ref} className="object-contain" alt="qr-code" src={`${window.location.origin}/no-qr-placeholder.png`} />
+            <img ref={qr_code_img_ref} className="object-contain" alt="qr-code" src={`no-qr-placeholder.png`} />
           </div>
           <pre className="lg:w-[50%] bg-gray-100 p-4 rounded overflow-auto text-sm mt-2">
             <p className="font-semibold">Current Data Packet</p>
