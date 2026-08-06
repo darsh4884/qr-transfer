@@ -11,7 +11,7 @@ function Sender() {
   const [file_path, setFilePath] = useState("");
   const [current_packet, setCurrentPacket] = useState(null);
 
-  const PACKET_SIZE = 500;
+  const PACKET_SIZE = 400;
   const DELAY_BETWEEN_QR_CODES = 150;
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -118,8 +118,8 @@ function Sender() {
             </button>
           </div>
 
-          <div className="mt-2 lg:w-[200px] lg:h-[200px] border border-gray-300 p-2">
-            <img ref={qr_code_img_ref} className="object-contain" alt="qr-code" src={"/no-qr-placeholder.png"} />
+          <div className="mt-2 lg:w-[300px] lg:h-[300px] border border-gray-300 p-2">
+            <img ref={qr_code_img_ref} className="object-contain" alt="qr-code" src={`${window.location.origin}/no-qr-placeholder.png`} />
           </div>
           <pre className="lg:w-[50%] bg-gray-100 p-4 rounded overflow-auto text-sm mt-2">
             <p className="font-semibold">Current Data Packet</p>
